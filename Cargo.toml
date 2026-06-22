@@ -1,0 +1,13 @@
+[package]
+name = "zed-dprint"
+version = "1.0.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+path = "src/dprint.rs"
+
+[dependencies]
+zed_extension_api = "0.7.0"
