@@ -182,11 +182,45 @@ rustup target add wasm32-wasip2
 ```sh
 cargo check
 cargo check --target wasm32-wasip2
+cargo build --release --target wasm32-wasip2
 cargo clippy --all-targets -- -D warnings
 cargo test
 cargo fmt -- --check
 npx --yes dprint check
 ```
+
+Or use the repository recipes:
+
+```sh
+just build-wasm
+just lint
+```
+
+### Rebuild `extension.wasm`
+
+`extension.wasm` is not source code in this repository. It is a generated artifact that Zed creates
+when packaging or installing the extension. The local Cargo build output uses the Rust crate target
+name instead:
+
+```sh
+target/wasm32-wasip2/release/zed_dprint.wasm
+```
+
+To rebuild it manually:
+
+```sh
+rustup target add wasm32-wasip2
+cargo build --release --target wasm32-wasip2
+```
+
+If you need a local file named `extension.wasm` for manual packaging/debugging, copy the build
+output:
+
+```sh
+cp target/wasm32-wasip2/release/zed_dprint.wasm extension.wasm
+```
+
+Do not commit `extension.wasm`; it is ignored intentionally.
 
 ### Load as a dev extension in Zed
 

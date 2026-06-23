@@ -31,12 +31,7 @@ impl<'config> AutoInstallerArtifacts for AutoInstallerConfig<'config> {
       Os::Mac | Os::Linux => "",
     };
 
-    PathBuf::from(format!(
-      "{folder_prefix}{version}/dprint{file_extension}",
-      folder_prefix = self.release_folder_prefix,
-      version = version,
-      file_extension = file_extension,
-    ))
+    PathBuf::from(self.release_dir_name(version)).join(format!("dprint{file_extension}"))
   }
 
   fn asset_name(&self, architecture: Architecture, os: Os) -> zed::Result<String> {
@@ -61,6 +56,12 @@ impl<'config> AutoInstallerArtifacts for AutoInstallerConfig<'config> {
     };
 
     Ok(format!("dprint-{architecture}-{os}.zip",))
+  }
+}
+
+impl AutoInstallerConfig<'_> {
+  fn release_dir_name(&self, version: &str) -> String {
+    format!("{}{version}", self.release_folder_prefix)
   }
 }
 
@@ -156,9 +157,9 @@ impl<'config> AutoInstaller<'config> {
 
   fn remove_old_releases(&self) -> zed::Result<()> {
     for entry in
-      fs::read_dir(".").map_err(|error| format!("Failed to list working directory.{error:?}"))?
+      fs::read_dir(".").map_err(|error| format!("Failed to list working directory: {error:?}"))?
     {
-      let entry = entry.map_err(|error| format!("Failed to load directory entry.{error:?}"))?;
+      let entry = entry.map_err(|error| format!("Failed to load directory entry: {error:?}"))?;
       let entry_path = entry.path();
       let Some(entry_name) = entry_path
         .file_name()
@@ -173,14 +174,14 @@ impl<'config> AutoInstaller<'config> {
 
       let entry_metadata = entry
         .metadata()
-        .map_err(|error| format!("Failed to stat {entry_path:?}.{error:?}"))?;
+        .map_err(|error| format!("Failed to stat {entry_path:?}: {error:?}"))?;
 
       if entry_metadata.is_dir() {
         fs::remove_dir_all(&entry_path)
-          .map_err(|error| format!("Failed to remove directory {entry_path:?}.{error:?}"))?;
+          .map_err(|error| format!("Failed to remove directory {entry_path:?}: {error:?}"))?;
       } else {
         fs::remove_file(&entry_path)
-          .map_err(|error| format!("Failed to remove file {entry_path:?}.{error:?}"))?;
+          .map_err(|error| format!("Failed to remove file {entry_path:?}: {error:?}"))?;
       }
     }
 
@@ -204,10 +205,7 @@ impl<'config> AutoInstaller<'config> {
 
     zed::download_file(
       &asset.download_url,
-      &format!(
-        "{}{}",
-        self.config.release_folder_prefix, self.latest_release.version
-      ),
+      &self.config.release_dir_name(&self.latest_release.version),
       DownloadedFileType::Zip,
     )
   }
