@@ -106,6 +106,7 @@ struct AutoInstaller<'config> {
   architecture: Architecture,
   language_server_id: LanguageServerId,
   binary_path: PathBuf,
+  release_dir_name: String,
 }
 
 impl<'config> AutoInstaller<'config> {
@@ -124,6 +125,7 @@ impl<'config> AutoInstaller<'config> {
     let (os, architecture) = zed::current_platform();
 
     let binary_path = config.binary_path(&latest_release.version, os);
+    let release_dir_name = config.release_dir_name(&latest_release.version);
 
     Ok(Self {
       config,
@@ -132,6 +134,7 @@ impl<'config> AutoInstaller<'config> {
       architecture,
       language_server_id: language_server_id.clone(),
       binary_path,
+      release_dir_name,
     })
   }
 
@@ -168,7 +171,9 @@ impl<'config> AutoInstaller<'config> {
         continue;
       };
 
-      if !entry_name.starts_with(self.config.release_folder_prefix) {
+      if entry_name == self.release_dir_name
+        || !entry_name.starts_with(self.config.release_folder_prefix)
+      {
         continue;
       }
 
@@ -205,7 +210,7 @@ impl<'config> AutoInstaller<'config> {
 
     zed::download_file(
       &asset.download_url,
-      &self.config.release_dir_name(&self.latest_release.version),
+      &self.release_dir_name,
       DownloadedFileType::Zip,
     )
   }
@@ -292,12 +297,20 @@ impl DprintExtension {
 }
 
 fn package_json_declares_dependency(package_json: &Value, package_name: &str) -> bool {
-  !package_json["dependencies"][package_name].is_null()
-    || !package_json["devDependencies"][package_name].is_null()
+  json_object_has_non_null_key(package_json, "dependencies", package_name)
+    || json_object_has_non_null_key(package_json, "devDependencies", package_name)
 }
 
 fn deno_json_declares_import(deno_json: &Value, package_name: &str) -> bool {
-  !deno_json["imports"][package_name].is_null()
+  json_object_has_non_null_key(deno_json, "imports", package_name)
+}
+
+fn json_object_has_non_null_key(json: &Value, object_key: &str, item_key: &str) -> bool {
+  json
+    .get(object_key)
+    .and_then(Value::as_object)
+    .and_then(|object| object.get(item_key))
+    .is_some_and(|value| !value.is_null())
 }
 
 impl zed::Extension for DprintExtension {
@@ -407,6 +420,30 @@ mod tests {
     ));
     assert!(!deno_json_declares_import(
       &json!({ "imports": { "prettier": "npm:prettier" } }),
+      "dprint"
+    ));
+  }
+
+  #[test]
+  fn json_object_key_detection_requires_a_non_null_object_entry() {
+    assert!(json_object_has_non_null_key(
+      &json!({ "dependencies": { "dprint": "1.0.0" } }),
+      "dependencies",
+      "dprint"
+    ));
+    assert!(!json_object_has_non_null_key(
+      &json!({ "dependencies": { "dprint": null } }),
+      "dependencies",
+      "dprint"
+    ));
+    assert!(!json_object_has_non_null_key(
+      &json!({ "dependencies": ["dprint"] }),
+      "dependencies",
+      "dprint"
+    ));
+    assert!(!json_object_has_non_null_key(
+      &json!({ "dependencies": { "prettier": "1.0.0" } }),
+      "dependencies",
       "dprint"
     ));
   }
