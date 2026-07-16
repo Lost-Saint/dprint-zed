@@ -297,20 +297,12 @@ impl DprintExtension {
 }
 
 fn package_json_declares_dependency(package_json: &Value, package_name: &str) -> bool {
-  json_object_has_non_null_key(package_json, "dependencies", package_name)
-    || json_object_has_non_null_key(package_json, "devDependencies", package_name)
+  !package_json["dependencies"][package_name].is_null()
+    || !package_json["devDependencies"][package_name].is_null()
 }
 
 fn deno_json_declares_import(deno_json: &Value, package_name: &str) -> bool {
-  json_object_has_non_null_key(deno_json, "imports", package_name)
-}
-
-fn json_object_has_non_null_key(json: &Value, object_key: &str, item_key: &str) -> bool {
-  json
-    .get(object_key)
-    .and_then(Value::as_object)
-    .and_then(|object| object.get(item_key))
-    .is_some_and(|value| !value.is_null())
+  !deno_json["imports"][package_name].is_null()
 }
 
 impl zed::Extension for DprintExtension {
@@ -420,30 +412,6 @@ mod tests {
     ));
     assert!(!deno_json_declares_import(
       &json!({ "imports": { "prettier": "npm:prettier" } }),
-      "dprint"
-    ));
-  }
-
-  #[test]
-  fn json_object_key_detection_requires_a_non_null_object_entry() {
-    assert!(json_object_has_non_null_key(
-      &json!({ "dependencies": { "dprint": "1.0.0" } }),
-      "dependencies",
-      "dprint"
-    ));
-    assert!(!json_object_has_non_null_key(
-      &json!({ "dependencies": { "dprint": null } }),
-      "dependencies",
-      "dprint"
-    ));
-    assert!(!json_object_has_non_null_key(
-      &json!({ "dependencies": ["dprint"] }),
-      "dependencies",
-      "dprint"
-    ));
-    assert!(!json_object_has_non_null_key(
-      &json!({ "dependencies": { "prettier": "1.0.0" } }),
-      "dependencies",
       "dprint"
     ));
   }
