@@ -88,8 +88,9 @@ impl DprintRelease {
 
     if !self.binary_path.is_file() {
       return Err(format!(
-        "dprint {} was downloaded but its executable was not found at {:?}",
-        self.release.version, self.binary_path
+        "dprint {} was downloaded but its executable was not found at {}",
+        self.release.version,
+        self.binary_path.display()
       ));
     }
 
@@ -102,6 +103,7 @@ impl DprintRelease {
   }
 
   fn cleanup_old_releases(&self) {
+    // Cleanup is best-effort; stale releases must not prevent startup.
     let Ok(entries) = fs::read_dir(".") else {
       return;
     };
@@ -256,6 +258,7 @@ fn worktree_dprint_binary_path(os: Os) -> &'static str {
 }
 
 fn worktree_declares_dprint_dependency(worktree: &Worktree) -> bool {
+  // A missing or malformed manifest should not prevent other binary fallbacks.
   worktree
     .read_text_file("package.json")
     .ok()

@@ -6,7 +6,7 @@ edition = "2024"
 license = "MIT"
 publish = false
 repository = "https://github.com/Lost-Saint/dprint-zed"
-rust-version = "1.85"
+rust-version = "1.97.0"
 description = "dprint language server integration for Zed"
 
 [lib]
