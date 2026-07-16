@@ -8,19 +8,19 @@ install-tools:
 
 # Format files
 fmt:
- cargo fmt
- dprint fmt
+  cargo fmt --all
+  dprint fmt
 
 # Build the WebAssembly artifact that Zed runs
 build-wasm:
-  rustup target add wasm32-wasip2
   cargo build --release --target wasm32-wasip2
 
 # Lint files
 lint:
-  cargo clippy --all-targets -- -D warnings
+  cargo fmt --all -- --check
+  cargo clippy --all-targets --all-features -- -D warnings
+  cargo test --all-features
   cargo check --target wasm32-wasip2
-  cargo test
   dprint check
 
 # Audit dependencies

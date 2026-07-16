@@ -5,21 +5,26 @@ All notable changes to this extension are documented in this file.
 This project follows a pragmatic changelog format. Versions listed here refer to the Zed extension
 package version in `extension.toml`.
 
-## Unreleased
+## 0.1.1 - 2026-07-15
 
 ### Fixed
 
 - Use the Windows npm command shim (`node_modules/.bin/dprint.cmd`) for workspace `dprint`
   dependencies on Windows.
-- Remove a clippy warning from language server binary resolution.
+- Make downloaded Unix binaries executable and verify the extracted binary before launching it.
+- Report auto-install failures through Zed's language-server installation status.
+- Forward configured binary environment variables, initialization options, and workspace settings.
+- Avoid treating a Deno import as proof that a `node_modules` command shim exists.
+- Update the transitive `anyhow` dependency to the release that fixes RUSTSEC-2026-0190.
 
 ### Changed
 
-- Clarify documentation around workspace npm binary resolution and the Zed worktree API limitation.
+- Cache a valid auto-installed binary for the lifetime of the extension.
+- Download a new release before removing older installations.
 - Update the repository dprint Markdown plugin to the current listed version.
-- Align the Rust crate with maintainability guidance by using a kebab-case package name, removing
-  unused dependencies, adding crate-level documentation, improving JSON parse errors, and covering
-  pure path/dependency detection behavior with unit tests.
+- Use the conventional `src/lib.rs` extension layout and add release WASM optimization settings.
+- Correct the extension author and repository metadata.
+- Add a pinned Rust development environment and continuous integration.
 
 ## 0.1.0
 

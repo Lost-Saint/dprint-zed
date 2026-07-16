@@ -1,97 +1,31 @@
-# Dprint (dprint) for Zed
+# dprint for Zed
 
-This repository contains a Zed extension that wires Zed’s Language Server support to the
-**`dprint`** CLI running in **LSP mode**.
+This extension runs [`dprint lsp`](https://dprint.dev/install/) so Zed can use dprint as a
+language-server formatter. Formatting behavior comes from the dprint configuration and plugins in
+your project; the extension does not implement a formatter itself.
 
-The extension **does not implement formatting itself**. It launches `dprint lsp` (by default) and
-lets Zed talk to it via the Language Server Protocol.
+## Binary resolution
 
----
+The extension resolves `dprint` in this order:
 
-## How it works
+1. `lsp.dprint.binary.path` in Zed settings.
+2. `node_modules/.bin/dprint` when `package.json` declares a `dprint` dependency.
+3. A `dprint` executable on the worktree's `PATH`.
+4. The latest stable binary from the official `dprint/dprint` GitHub release.
 
-### Language server id
+Auto-install supports macOS, Linux, and Windows on x86-64 or AArch64. The extension caches the
+resolved auto-installed binary for its lifetime and removes older downloads after a successful
+installation.
 
-The language server id is **`dprint`** (as defined in `extension.toml`). Any Zed `lsp` configuration
-you apply must be under:
+## Configuration
 
-- `lsp.dprint`
-
-### Binary resolution order (truthy to the code)
-
-When Zed asks the extension to start the language server, the extension resolves which `dprint`
-executable to run in this order:
-
-1. **Zed settings override**: if you configured `lsp.dprint.binary.path`, that path is used.
-2. **Workspace `node_modules` install**: if your worktree indicates you use `dprint`, the extension
-   uses the npm binary path (`node_modules/.bin/dprint`, or `node_modules/.bin/dprint.cmd` on
-   Windows).
-   - “Indicates you use `dprint`” means:
-     - `package.json` contains `dprint` in `dependencies` or `devDependencies`, **or**
-     - `deno.json` contains `dprint` in `imports`
-   - Be sure to run `npm install` or equivalent to install `dprint` in `node_modules`. The Zed
-     extension API does not expose a reliable way to check `node_modules` from the worktree before
-     returning the command path.
-3. **System `PATH`**: if `dprint` is found via `which`, it’s used.
-4. **Auto-install fallback**: if none of the above apply, the extension downloads the latest stable
-   release from `dprint/dprint` GitHub releases and runs it.
-
-Notes:
-
-- The auto-installed binary is downloaded as a GitHub release zip appropriate for your OS + CPU
-  architecture.
-- `x86` (32-bit) is **not supported** by the auto-installer; in that case you must provide a
-  `dprint` binary yourself.
-
-### Arguments
-
-- If you set `lsp.dprint.binary.arguments`, those arguments are used.
-- Otherwise the extension starts dprint with `["lsp"]`.
-
-So by default it runs:
+The default command is:
 
 ```sh
 dprint lsp
 ```
 
----
-
-## Supported languages
-
-Zed will attempt to use this language server for the languages declared in `extension.toml`:
-
-- JavaScript
-- TypeScript
-- TSX
-- JSON
-- JSONC
-- Markdown
-- TOML
-- CSS
-- SCSS
-- LESS
-- HTML
-- Vue.js
-- Svelte
-- Astro
-- Angular
-- Twig
-- GraphQL
-- YAML
-- PHP
-- Python
-
-Whether formatting works for a given file still depends on your `dprint` configuration and plugins.
-
----
-
-## Configuration
-
-### 1) Recommended: pin the `dprint` binary Zed should run
-
-When troubleshooting, explicitly point Zed at the binary and arguments you want.
-
-Example `settings.json`:
+You can override its path, arguments, and environment in Zed's `settings.json`:
 
 ```json
 {
@@ -99,138 +33,79 @@ Example `settings.json`:
     "dprint": {
       "binary": {
         "path": "/absolute/path/to/dprint",
-        "arguments": ["lsp"]
+        "arguments": ["lsp"],
+        "env": {
+          "DPRINT_CACHE_DIR": "/absolute/path/to/cache"
+        }
       }
     }
   }
 }
 ```
 
-If you omit `arguments`, the extension defaults to `["lsp"]`.
+The extension also forwards Zed's `initialization_options` and `settings` values to the language
+server. dprint normally discovers `dprint.json`, `dprint.jsonc`, `.dprint.json`, or `.dprint.jsonc`
+from the file being formatted. Prefer dprint's standard configuration discovery over editor-only
+settings.
 
-### 2) “Extension settings” passed to the server
+## Languages
 
-This extension currently **does not add or forward custom LSP settings** to `dprint`.
-
-If you see examples referencing settings like `config_path`, `require_config_file`,
-`requireConfiguration`, or `configurationPath`, those are **not implemented by this codebase**.
-
-What actually happens today:
-
-- The extension only provides Zed a command + args (and no extra environment variables).
-- `dprint` discovers configuration the same way it normally does when you run it (for example, by
-  finding `dprint.json` / `.dprint.json` according to `dprint`’s own rules).
-
-If you need non-default config discovery behavior, you currently must accomplish that via:
-
-- running `dprint` from an environment where it can find the desired config, or
-- using a wrapper script/binary and configuring `lsp.dprint.binary.path` to point to that wrapper
-  (advanced).
-
----
-
-## Auto-install behavior (details)
-
-If the extension auto-installs `dprint`, it:
-
-- checks the latest stable GitHub release from `dprint/dprint`
-- downloads the matching zip asset for your platform
-- removes older `dprint-*` directories/files in the extension working directory
-- runs the downloaded `dprint` binary
-
-This is meant as a convenience fallback so the extension can work even when `dprint` is not already
-installed.
-
----
-
-## Troubleshooting
-
-### The server fails to start
-
-Most common causes:
-
-- The configured binary isn’t executable or isn’t the `dprint` you expect.
-- The binary arguments aren’t correct (if you overrode them).
-- You’re on 32-bit (`x86`) and relying on auto-install (unsupported).
-
-Quick checks:
-
-- Run the exact command Zed would run (for example `dprint lsp`) in a terminal.
-- Temporarily set `lsp.dprint.binary.path` to a known-good `dprint` and keep arguments as `["lsp"]`.
-
-### Formatting doesn’t change files
-
-If the language server starts but formatting seems ineffective, validate your `dprint` configuration
-and plugins by running `dprint fmt` manually in the same worktree and ensuring it produces the
-expected output.
-
----
+The extension registers dprint for the languages listed in [extension.toml](extension.toml). Actual
+formatting support depends on the plugins in your dprint configuration.
 
 ## Development
 
-### Prerequisites
-
-- Rust toolchain (stable is fine)
-- `wasm32-wasip2` target (Zed loads Rust extensions as WASM):
+The checked-in Rust toolchain configuration installs the components and `wasm32-wasip2` target
+needed by Zed.
 
 ```sh
-rustup target add wasm32-wasip2
+just lint
+just build-wasm
 ```
 
-### Build/check
+Equivalent commands:
 
 ```sh
-cargo check
+cargo fmt --all -- --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test --all-features
 cargo check --target wasm32-wasip2
 cargo build --release --target wasm32-wasip2
-cargo clippy --all-targets -- -D warnings
-cargo test
-cargo fmt -- --check
-npx --yes dprint check
 ```
 
-Or use the repository recipes:
+The release build is written to:
 
-```sh
-just build-wasm
-just lint
-```
-
-### Rebuild `extension.wasm`
-
-`extension.wasm` is not source code in this repository. It is a generated artifact that Zed creates
-when packaging or installing the extension. The local Cargo build output uses the Rust crate target
-name instead:
-
-```sh
+```text
 target/wasm32-wasip2/release/zed_dprint.wasm
 ```
 
-To rebuild it manually:
+Zed builds and packages this artifact when installing the extension. Do not commit a generated
+`extension.wasm`.
 
-```sh
-rustup target add wasm32-wasip2
-cargo build --release --target wasm32-wasip2
-```
+### Install as a dev extension
 
-If you need a local file named `extension.wasm` for manual packaging/debugging, copy the build
-output:
+1. Open Zed's Extensions page.
+2. Run `zed: install dev extension`.
+3. Select this repository.
+4. Use **Rebuild** on the Extensions page after making changes.
 
-```sh
-cp target/wasm32-wasip2/release/zed_dprint.wasm extension.wasm
-```
+For runtime failures, inspect `Zed.log` with `zed: open log`, or launch Zed with `zed --foreground`
+for verbose output.
 
-Do not commit `extension.wasm`; it is ignored intentionally.
+## Publishing
 
-### Load as a dev extension in Zed
+Zed publishes extensions by referencing their repository from
+[`zed-industries/extensions`](https://github.com/zed-industries/extensions). Keep the versions in
+`Cargo.toml`, `Cargo.lock`, and `extension.toml` aligned, update `CHANGELOG.md`, and submit a
+registry PR that advances the extension submodule.
 
-1. Open Zed
-2. Run `zed: install dev extensions`
-3. Select the repository directory
-4. After changes: open `zed: extensions`, find the extension, and click **Rebuild**
+The `dprint` ID already belongs to the existing marketplace extension. Replacing its repository
+requires coordination with Zed maintainers; that handoff is tracked in
+[`zed-industries/extensions#5756`](https://github.com/zed-industries/extensions/issues/5756).
 
----
+See Zed's [extension development guide](https://zed.dev/docs/extensions/developing-extensions) for
+the current publishing requirements.
 
 ## License
 
-MIT
+[MIT](LICENSE)

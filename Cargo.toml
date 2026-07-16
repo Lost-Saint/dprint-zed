@@ -1,13 +1,22 @@
 [package]
 name = "zed-dprint"
 version = "0.1.1"
+authors = ["Lost Saint"]
 edition = "2024"
 license = "MIT"
 publish = false
+repository = "https://github.com/Lost-Saint/dprint-zed"
+rust-version = "1.85"
+description = "dprint language server integration for Zed"
 
 [lib]
 crate-type = ["cdylib"]
-path = "src/dprint.rs"
 
 [dependencies]
 zed_extension_api = "0.7.0"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

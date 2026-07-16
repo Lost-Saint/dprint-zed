@@ -1,8 +1,8 @@
-authors = ["unkown", "unkown"]
-description = "Dprint support for Zed"
+authors = ["Lost Saint"]
+description = "Format files with dprint through its language server"
 id = "dprint"
 name = "Dprint"
-repository = "https://github.com/panikkastudio/dprint-zed"
+repository = "https://github.com/Lost-Saint/dprint-zed"
 schema_version = 1
 version = "0.1.1"
 
