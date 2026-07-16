@@ -4,7 +4,7 @@ id = "dprint"
 name = "Dprint"
 repository = "https://github.com/panikkastudio/dprint-zed"
 schema_version = 1
-version = "0.1.0"
+version = "0.1.1"
 
 [language_servers.dprint]
 name = "dprint"
