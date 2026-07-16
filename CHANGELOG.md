@@ -5,6 +5,12 @@ All notable changes to this extension are documented in this file.
 This project follows a pragmatic changelog format. Versions listed here refer to the Zed extension
 package version in `extension.toml`.
 
+## 0.1.2 - 2026-07-16
+
+### Changed
+
+- Improve executable-path error messages while preserving diagnostic details for non-UTF-8 paths.
+
 ## 0.1.1 - 2026-07-15
 
 ### Fixed

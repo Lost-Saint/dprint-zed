@@ -1,6 +1,6 @@
 [package]
 name = "zed-dprint"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Lost Saint"]
 edition = "2024"
 license = "MIT"
